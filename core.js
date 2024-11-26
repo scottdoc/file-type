@@ -456,13 +456,6 @@ export class FileTypeParser {
 						};
 					}
 
-					if (zipHeader.filename.startsWith('ppt/')) {
-						return {
-							ext: 'pptx',
-							mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-						};
-					}
-
 					if (zipHeader.filename.startsWith('3D/') && zipHeader.filename.endsWith('.model')) {
 						return {
 							ext: '3mf',
@@ -510,6 +503,16 @@ export class FileTypeParser {
 						let nextHeaderIndex = -1;
 
 						while (nextHeaderIndex < 0 && (tokenizer.position < tokenizer.fileInfo.size)) {
+
+							// For zip files where the compressed size is not known and we must go hunting, for efficiency, double the buffer size with each pass
+							if (this.buffer.length < tokenizer.fileInfo.size) {
+								const biggerBuffer = new Uint8Array(
+									Math.min(tokenizer.fileInfo.size, this.buffer.length * 2)
+								);
+								biggerBuffer.set(this.buffer);
+								this.buffer = biggerBuffer;
+							}
+
 							await tokenizer.peekBuffer(this.buffer, {mayBeLess: true});
 
 							nextHeaderIndex = indexOf(this.buffer, new Uint8Array([0x50, 0x4B, 0x03, 0x04]));
